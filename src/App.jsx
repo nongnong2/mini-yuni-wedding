@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Cover from './components/Cover'
 import Greeting from './components/Greeting'
 import Calendar from './components/Calendar'
+import Gallery from './components/Gallery'
 
 export default function App() {
   const [toast, setToast] = useState('') // 화면 아래 잠깐 뜨는 알림 문구
@@ -18,6 +19,7 @@ export default function App() {
       <Cover />
       <Greeting />
       <Calendar />
+      <Gallery />
       {toast && <div className="toast">{toast}</div>}
     </main>
   )
