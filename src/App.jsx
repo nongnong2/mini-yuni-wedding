@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import Cover from './components/Cover'
+import Greeting from './components/Greeting'
+import Calendar from './components/Calendar'
 
 export default function App() {
   const [toast, setToast] = useState('') // 화면 아래 잠깐 뜨는 알림 문구
@@ -12,6 +15,9 @@ export default function App() {
 
   return (
     <main className="invitation">
+      <Cover />
+      <Greeting />
+      <Calendar />
       {toast && <div className="toast">{toast}</div>}
     </main>
   )
