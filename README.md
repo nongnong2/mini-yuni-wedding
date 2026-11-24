@@ -44,3 +44,19 @@ npm run preview  # 빌드 결과 미리보기
 - 티맵 버튼은 티맵 앱이 설치된 휴대폰에서만 열립니다.
 - 복사 기능은 https 주소(GitHub Pages)에서 동작합니다.
 - 공개 저장소이므로 계좌번호 등 내용이 코드에서도 보입니다 (사이트 자체도 공개).
+
+## 온라인 하객석과 방명록
+
+하객이 캐릭터로 3D 홀에 들어가 방명록을 남기는 기능입니다. 주소 끝에 `#hall`을 붙이면 바로 입장합니다.
+
+- **문구 수정**: `src/data/wedding.js`의 `onlineHall`
+- **색 수정**: `src/styles/global.css`의 `--hall-*` 변수 (캐릭터 옷, 꽃, 벽 등)
+- **부적절한 글 삭제**: [Firebase 콘솔](https://console.firebase.google.com/project/mini-yuni-wedding/firestore) → `messages`에서 해당 글의 ⋮ → 문서 삭제
+- **비밀번호를 잊은 하객의 글**: 비밀번호는 해시로만 저장되어 알려줄 수 없습니다. 위 방법으로 삭제해 주세요.
+- **홀에는 최신 글 100개**만 표시됩니다. 이전 글도 Firebase에는 남아 있습니다.
+- **무료 한도**: 하루 읽기 5만 번(글이 100개일 때 입장 약 500회). 넘으면 그날은 방명록만 멈춥니다.
+
+### Firebase를 새로 설정할 때
+1. Firebase 콘솔에서 프로젝트 생성 → **Firestore Database** 만들기 (Realtime Database 아님), 위치 `asia-northeast3`, 프로덕션 모드
+2. 프로젝트 설정 → 내 앱 → 웹 앱 등록 → 설정값을 `src/data/firebase.js`에 입력
+3. Firestore **규칙** 탭에 `firestore.rules` 내용을 붙여넣고 **게시** (적용까지 몇 분 걸릴 수 있음)
