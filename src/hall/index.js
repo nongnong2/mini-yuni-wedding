@@ -70,7 +70,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
 
   // ---------- 걷기 ----------
   function walkTo(target, then) {
-    if (state.mode !== 'me') setMode('me')
+    if (state.mode === 'stage') setMode('me')
     player.follow(findPath[state.where](player, target), then)
   }
   // 로비의 방명록·문·안내판으로 감
@@ -155,7 +155,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
     Object.assign(player, aisleBeside(player.seat), { seat: null })
     state.selected = null
     on.seat(false)
-    setMode('me')
+    if (state.mode !== 'whole') setMode('me')
   }
 
   // ---------- 화면 터치 ----------
@@ -209,7 +209,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
       const input = state.busy ? controls.still : controls.direction(cameraman.view.yaw)
       if (input.x || input.z) {
         if (player.seat) stand()
-        else if (state.mode !== 'me') setMode('me') // 걸으면 나를 따라오는 시점으로
+        else if (state.mode === 'stage') setMode('me') // 걸으면 나를 따라오는 시점으로 (홀 전체는 그대로)
       }
       player.move(dt, input, place.blocked, state.busy)
       checkDoor()
