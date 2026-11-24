@@ -11,12 +11,10 @@ permissions:
   pages: write
   id-token: write
 
+# 빌드와 배포를 나눔: 한 번에 하면 방금 올린 파일이 GitHub 목록에 늦게 나타나 배포가 실패할 때가 있음
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,5 +26,13 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
+  deploy:
+    needs: build # 빌드가 끝난 뒤 실행
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
