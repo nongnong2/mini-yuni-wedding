@@ -31,7 +31,7 @@ export function createPlayer(scene, start) {
     },
     stop() { player.follow([]) },
 
-    // input: 조이스틱·방향키의 방향 { x, z }, free: 벽을 무시하고 걸음(문을 지날 때)
+    // input: 방향키의 방향 { x, z }, free: 벽을 무시하고 걸음(문을 지날 때)
     move(dt, input, blocked, free) {
       let go = Math.min(1, Math.hypot(input.x, input.z))
       let { x: vx, z: vz } = input

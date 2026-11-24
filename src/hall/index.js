@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { BUBBLE_SECONDS, FADE, MAX_YAW, MODES, MY_BUBBLE_SECONDS } from './config'
+import { BUBBLE_SECONDS, FADE, HOLD_INTERVAL, MAX_YAW, MODES, MY_BUBBLE_SECONDS } from './config'
 import { createCameraman } from './core/camera'
 import { makePathFinder } from './core/path'
 import { clamp } from './core/shapes'
@@ -61,6 +61,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
     selected: null, // 말풍선을 띄운 하객
   }
   let selectedUntil = 0
+  let hold = null // 꾹 누르고 있는 손가락 { x, y, next(다음에 길을 찾을 시간) }
   let wasAtDoor = false
   let changeTimer = 0
   let frameId = 0
@@ -92,6 +93,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
     const here = lobby.atDoor(player.x, player.z)
     if (here && !wasAtDoor) {
       player.stop()
+      endHold()
       if (state.doorOpen) passDoor()
       else on.door()
     }
@@ -105,6 +107,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
   function changePlace(next, start) {
     state.busy = true
     player.stop()
+    endHold()
     overlay.fade(true)
     changeTimer = setTimeout(() => {
       state.where = next
@@ -155,29 +158,55 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
     setMode('me')
   }
 
-  // ---------- 화면을 톡 누름 ----------
-  function tap(clientX, clientY) {
-    if (!player.walker || state.busy) return
-    picker.aim(clientX, clientY)
+  // ---------- 화면 터치 ----------
+  // 누른 곳의 하객이나 로비의 물건에 할 일 (없으면 null)
+  function actionAt() {
     if (state.where === 'lobby') {
       const name = picker.name(lobbyParts.targets)
-      if (name) { goSpot(name); return }
-    } else {
-      const guest = guests.pick(picker.ray)
-      if (guest) { select(guest, BUBBLE_SECONDS); return }
+      return name ? () => goSpot(name) : null
     }
-    state.selected = null
-    if (player.seat) return // 앉아 있을 때 실수로 일어나지 않게
-    const point = picker.floor(places[state.where].bounds)
-    if (point) walkTo(point)
+    const guest = guests.pick(picker.ray)
+    return guest && (() => select(guest, BUBBLE_SECONDS))
   }
+  function goFloor(point) {
+    if (player.seat) {
+      if (places[state.where].blocked(point.x, point.z)) return // 앉아서 단상이나 의자를 눌렀을 때는 그대로
+      stand()
+    }
+    walkTo(point)
+  }
+  function tap(x, y) {
+    if (!player.walker || state.busy) return
+    picker.aim(x, y)
+    const action = actionAt()
+    if (action) { action(); return }
+    state.selected = null
+    const point = picker.floor(places[state.where].bounds)
+    if (point) goFloor(point)
+  }
+  // 꾹 누르고 있으면 손가락을 따라 걸음. 하객이나 물건 위에서 시작하면 false (떼면 톡 누르기로)
+  function startHold(x, y) {
+    if (!player.walker || state.busy) return false
+    picker.aim(x, y)
+    if (actionAt()) return false
+    hold = { x, y, next: 0 }
+    return true
+  }
+  function followHold() {
+    if (!hold || state.busy || time < hold.next) return
+    hold.next = time + HOLD_INTERVAL
+    picker.aim(hold.x, hold.y)
+    const point = picker.nearestFloor(places[state.where].bounds)
+    if (point) goFloor(point)
+  }
+  function endHold() { hold = null } // 마지막으로 가리킨 곳까지는 마저 걸어감
 
   // ---------- 매 순간 다시 그리기 ----------
-  const still = { x: 0, z: 0 }
   function step(dt) {
     const place = places[state.where]
     if (player.walker) {
-      const input = state.busy ? still : controls.direction(cameraman.view.yaw)
+      followHold()
+      const input = state.busy ? controls.still : controls.direction(cameraman.view.yaw)
       if (input.x || input.z) {
         if (player.seat) stand()
         else if (state.mode !== 'me') setMode('me') // 걸으면 나를 따라오는 시점으로
@@ -229,7 +258,8 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
   return {
     portraits,
     enter: player.enter,
-    tap, sit, stand, passDoor,
+    tap, startHold, endHold, sit, stand, passDoor,
+    moveHold(x, y) { if (hold) Object.assign(hold, { x, y }) },
     toLobby() { if (!state.busy) changePlace('lobby', lobby.back) },
     nextMode() { if (!state.busy) setMode(MODES[(MODES.indexOf(state.mode) + 1) % MODES.length]) },
 
@@ -248,9 +278,8 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
       petals.scatter(player)
     },
 
-    setStick: controls.setStick,
     setKey: controls.setKey,
-    clearKeys: controls.clearKeys,
+    clearKeys: controls.clear,
     get yaw() { return state.yaw },
     setYaw(value) {
       const max = MAX_YAW[state.where === 'lobby' ? 'lobby' : state.mode]
@@ -261,6 +290,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
     pause(stop) {
       cancelAnimationFrame(frameId)
       controls.clear()
+      endHold()
       last = performance.now()
       if (!stop) frame()
     },

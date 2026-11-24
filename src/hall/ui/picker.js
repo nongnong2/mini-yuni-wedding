@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { clamp } from '../core/shapes'
 
 // 화면에서 누른 곳을 3D에서 찾음
 export function createPicker(canvas, camera) {
@@ -21,6 +22,11 @@ export function createPicker(canvas, camera) {
     floor({ x0, x1, z0, z1 }) {
       const p = ray.ray.intersectPlane(ground, new THREE.Vector3())
       return p && p.x >= x0 && p.x <= x1 && p.z >= z0 && p.z <= z1 ? p : null
+    },
+    // 바닥의 점 (bounds 밖이면 가장 가까운 안쪽)
+    nearestFloor({ x0, x1, z0, z1 }) {
+      const p = ray.ray.intersectPlane(ground, new THREE.Vector3())
+      return p && p.set(clamp(p.x, x0, x1), 0, clamp(p.z, z0, z1))
     },
   }
 }

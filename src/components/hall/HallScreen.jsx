@@ -10,7 +10,6 @@ import HallActions from './HallActions'
 import HallCanvas from './HallCanvas'
 import HallTop from './HallTop'
 import Hint from './Hint'
-import Joystick from './Joystick'
 import MessageList from './MessageList'
 import StartCard from './StartCard'
 import WriteForm from './WriteForm'
@@ -36,7 +35,7 @@ export default function HallScreen({ hidden, onClose, onInvite, onToast }) {
     onDoor: () => setSheet('door'),
   })
   useKeyboardInset(rootRef)
-  useScrollLock(!hidden)
+  useScrollLock(true)
   useArrowKeys(hall, entered && !sheet && !hidden)
 
   const wrote = messages.some((m) => m.id === mineId)
@@ -61,7 +60,7 @@ export default function HallScreen({ hidden, onClose, onInvite, onToast }) {
 
   return (
     <div ref={rootRef} className="hall" hidden={hidden}>
-      <HallCanvas hall={hall} canvasRef={canvasRef} overlayRef={overlayRef} canTurn={entered} />
+      <HallCanvas hall={hall} canvasRef={canvasRef} overlayRef={overlayRef} active={entered} />
       <HallTop count={messages.length} status={guestbook.status} onList={supported ? () => setSheet('list') : null} onClose={onClose} />
 
       {supported && !entered && (
@@ -70,7 +69,6 @@ export default function HallScreen({ hidden, onClose, onInvite, onToast }) {
       {entered && (
         <>
           {!seated && <Hint key={where + wrote} where={where} wrote={wrote} />}
-          <Joystick onMove={(x, y) => hall.current?.setStick(x, y)} />
           {where === 'hall' && <HallActions hall={hall} wrote={wrote} seated={seated} mode={mode} onInvite={onInvite} />}
         </>
       )}

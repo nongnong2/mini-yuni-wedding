@@ -1,6 +1,7 @@
 // 온라인 하객석에서 자주 바꿀 만한 숫자를 모은 곳
 
 export const WALK_SPEED = 3.6 // 1초에 걷는 거리(m)
+export const HOLD_INTERVAL = 0.15 // 꾹 누르고 있을 때 길을 다시 찾는 간격(초)
 export const PETALS = 140 // 축하 꽃잎 개수
 export const FADE = 450 // 로비 ↔ 홀을 오갈 때 화면이 하얘지는 시간(밀리초)
 

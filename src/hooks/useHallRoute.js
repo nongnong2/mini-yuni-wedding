@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-// 주소 끝: #hall이면 온라인 하객석, #hall-invitation이면 하객석을 잠시 숨기고 청첩장 보기
+// 주소 끝: #hall이면 온라인 하객석, #hall-invitation이면 하객석을 잠시 숨기고 청첩장 창 열기
 const HALL = '#hall'
 const PEEK = '#hall-invitation'
 
@@ -23,7 +23,6 @@ export function useHallRoute() {
       }
       live.current = next === HALL || next === PEEK
       setHash(next)
-      if (next === PEEK) window.scrollTo(0, 0) // 청첩장 맨 위부터
     }
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)

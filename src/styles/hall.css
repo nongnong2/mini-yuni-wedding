@@ -35,8 +35,6 @@
 .hall-btn.wide { border-radius: 12px; padding: 12px; font-size: 16px; }
 .hall button:focus-visible { outline: 2px solid var(--hall-text-accent); outline-offset: 2px; }
 
-.hall-stick { position: absolute; left: var(--left); bottom: var(--bottom); width: 116px; height: 116px; border-radius: 50%; background: var(--hall-cream); border: 1px solid var(--accent-soft); opacity: 0.8; touch-action: none; }
-.hall-stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px; border-radius: 50%; background: var(--hall-text-accent); }
 .hall-actions { position: absolute; right: var(--right); bottom: var(--bottom); display: grid; gap: 8px; }
 .hall-actions .main { padding: 14px 22px; font-size: 16px; box-shadow: 0 6px 18px var(--hall-dim); }
 /* 방명록과 문 위에 떠 있는 버튼 */
@@ -47,7 +45,7 @@
 .hall-invite { position: absolute; left: var(--left); top: calc(var(--top) + 66px); }
 .hall-fade { position: absolute; inset: 0; background: var(--hall-white); opacity: 0; transition: opacity ease; }
 .hall-hint { position: absolute; left: 50%; bottom: calc(var(--bottom) + 164px); width: max-content; max-width: calc(100% - 32px); text-align: center; transform: translateX(-50%); background: var(--hall-text); color: var(--hall-white); border-radius: 99px; padding: 6px 14px; font-size: 13px; pointer-events: none; animation: hall-hint 7s forwards; }
-.hall-hint.lobby { bottom: calc(var(--bottom) + 130px); }
+.hall-hint.lobby { bottom: calc(var(--bottom) + 16px); }
 @keyframes hall-hint { 85% { opacity: 0.9; } 100% { opacity: 0; } }
 
 .hall-card { position: absolute; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom) + var(--keyboard)); transform: translateX(-50%); width: min(400px, calc(100% - 32px)); max-height: calc(100% - 100px - var(--keyboard)); overflow-y: auto; touch-action: pan-y; background: var(--hall-cream); border-radius: 20px; padding: 18px 20px 20px; box-shadow: 0 14px 40px var(--hall-dim); display: grid; gap: 12px; }
@@ -73,14 +71,13 @@
 .hall-messages b { font-size: 14px; color: var(--hall-text-accent); }
 .hall-messages p { overflow-wrap: anywhere; white-space: pre-line; }
 .hall-delete { float: right; font-size: 13px; color: var(--text-soft); padding: 8px 0 8px 16px; }
-.hall:not([hidden]) ~ .toast { bottom: calc(240px + env(safe-area-inset-bottom)); } /* 홀 안에서는 조이스틱·버튼 위에 알림을 띄움 */
+.hall:not([hidden]) ~ .toast { bottom: calc(240px + env(safe-area-inset-bottom)); } /* 홀 안에서는 버튼 위에 알림을 띄움 */
 .hall-tag.me { background: var(--hall-text-accent); color: var(--hall-white); }
 
 /* 폭이 좁은 폰 */
 @media (max-width: 374px) {
   .hall-top { font-size: 13px; padding: 6px 8px; max-width: calc(100% - 194px); }
   .hall-bar .hall-btn { padding: 8px 10px; font-size: 13px; }
-  .hall-stick { width: 104px; height: 104px; }
   .hall-actions .hall-btn { padding-inline: 12px; font-size: 13px; }
 }
 /* 높이가 낮은 폰: 캐릭터 고르기 창을 줄임 */
@@ -96,7 +93,6 @@
   .hall-pick button { padding-bottom: 4px; }
   .hall-card .wide { padding: 8px; }
   .hall { --bottom: calc(12px + env(safe-area-inset-bottom)); }
-  .hall-stick { width: 104px; height: 104px; }
   .hall-spot span { padding: 3px 11px; font-size: 13px; }
   .hall-hint, .hall-hint.lobby { bottom: var(--bottom); max-width: calc(100% - 380px); }
   .hall textarea { height: 72px; }
