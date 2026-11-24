@@ -17,7 +17,10 @@ export default function HallScreen({ onClose, onToast }) {
   const [noWebgl, setNoWebgl] = useState(false) // 3D를 못 쓰는 기기
   const [portraits, setPortraits] = useState({})
   const [step, setStep] = useState('start') // start: 캐릭터 고르기, play: 홀 안
-  const [sheet, setSheet] = useState('') // 열린 창: '', 'write', 'list'
+  const [where, setWhere] = useState('lobby') // lobby: 예식장 입구, hall: 예식장 안
+  const [seated, setSeated] = useState(false)
+  const [mineId, setMineId] = useState('') // 방금 내가 남긴 글
+  const [sheet, setSheet] = useState('') // 열린 창: '', 'write', 'list', 'door'
   const [avatar, setAvatar] = useState('woman')
   const [name, setName] = useState('')
   const [messages, setMessages] = useState([])
@@ -36,6 +39,11 @@ export default function HallScreen({ onClose, onToast }) {
           date: formatDate(wedding.date),
           photo: wedding.cover,
         },
+        labels: { book: wedding.onlineHall.book, door: wedding.onlineHall.door },
+        onBook: () => setSheet('write'),
+        onDoor: () => setSheet('door'),
+        onWhere: (next) => { setWhere(next); setSeated(false) },
+        onSeat: setSeated,
       })
       setPortraits(hall.current.portraits)
     } catch {
@@ -120,10 +128,10 @@ export default function HallScreen({ onClose, onToast }) {
     const next = [...messages, message].slice(-100)
     setName(form.name)
     setMessages(next)
+    setMineId(message.id)
     setSheet('')
     onToast('방명록을 남겼습니다')
-    hall.current?.setMessages(next)
-    hall.current?.sitAs(message.id)
+    hall.current?.wrote(message.id)
   }
   async function remove(id, password) {
     await deleteMessage(id, password)
@@ -131,6 +139,7 @@ export default function HallScreen({ onClose, onToast }) {
     onToast('글을 삭제했습니다')
   }
 
+  const wrote = messages.some((m) => m.id === mineId)
   const countText = { loading: '방명록 불러오는 중', ok: `방명록 ${messages.length}개`, error: '방명록을 불러오지 못했습니다' }[loadState]
 
   return (
@@ -168,7 +177,7 @@ export default function HallScreen({ onClose, onToast }) {
 
       {step === 'play' && (
         <>
-          <p className="hall-hint">바닥을 누르면 걸어가요. 하객을 누르면 글이 보여요</p>
+          <p key={where + wrote} className="hall-hint">{where === 'hall' ? '바닥을 누르면 걸어가요. 하객을 누르면 글이 보여요' : wrote ? '문을 누르면 예식장으로 들어가요' : '손님맞이대의 방명록을 눌러 보세요'}</p>
           <div
             className="hall-stick"
             onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); moveStick(e) }}
@@ -177,7 +186,12 @@ export default function HallScreen({ onClose, onToast }) {
           >
             <i ref={knobRef} />
           </div>
-          <button className="hall-btn main hall-write" onClick={() => setSheet('write')}>방명록 쓰기</button>
+          {where === 'hall' && (
+            <div className="hall-actions">
+              {wrote && !seated && <button className="hall-btn main" onClick={() => hall.current.sit()}>내 자리에 앉기</button>}
+              <button className="hall-btn" onClick={() => hall.current.toLobby()}>로비로 나가기</button>
+            </div>
+          )}
         </>
       )}
 
@@ -186,6 +200,16 @@ export default function HallScreen({ onClose, onToast }) {
           messages={messages} loadState={loadState} onRemove={remove}
           onClose={noWebgl ? onClose : () => setSheet('')} onWrite={noWebgl ? () => setSheet('write') : null}
         />
+      )}
+      {sheet === 'door' && (
+        <Sheet onClose={() => setSheet('')}>
+          <h2>방명록을 먼저 남겨 주세요</h2>
+          <p>손님맞이대에서 축하 글을 남기시면 문이 열립니다.</p>
+          <div className="hall-row">
+            <button className="hall-btn" onClick={() => { setSheet(''); hall.current.passDoor() }}>그냥 둘러보기</button>
+            <button className="hall-btn main" onClick={() => setSheet('write')}>방명록 쓰기</button>
+          </div>
+        </Sheet>
       )}
       {sheet === 'write' && <WriteForm defaultName={name} onPost={post} onClose={() => setSheet('')} avatar={avatar} onAvatar={noWebgl ? setAvatar : null} />}
     </div>
@@ -239,7 +263,7 @@ function WriteForm({ defaultName, onPost, onClose, avatar, onAvatar }) {
         {error && <p className="hall-error" role="alert">{error}</p>}
         <div className="hall-row">
           <button type="button" className="hall-btn" onClick={onClose}>취소</button>
-          <button className="hall-btn main" disabled={busy}>{busy ? '저장 중' : '남기고 자리에 앉기'}</button>
+          <button className="hall-btn main" disabled={busy}>{busy ? '저장 중' : '남기기'}</button>
         </div>
       </form>
     </Sheet>

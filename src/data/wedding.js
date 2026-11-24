@@ -38,6 +38,8 @@ export const wedding = {
 축하 인사를 남기실 수 있습니다.`,
     button: '입장하기',
     welcome: '온라인 하객석에 오신 걸 환영합니다',
+    book: '방명록',
+    door: '예식장 입장',
     screenTitle: '저희 결혼합니다',
     notice: '이름과 글은 청첩장을 보는 모두에게 공개됩니다.',
   },

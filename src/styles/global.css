@@ -220,7 +220,14 @@ footer { padding: 40px 0; text-align: center; color: var(--text-soft); font-size
 
 .hall-stick { position: absolute; left: 16px; bottom: 24px; width: 116px; height: 116px; border-radius: 50%; background: var(--hall-cream); border: 1px solid var(--accent-soft); opacity: 0.8; touch-action: none; }
 .hall-stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px; border-radius: 50%; background: var(--hall-text-accent); }
-.hall-write { position: absolute; right: 16px; bottom: 34px; padding: 14px 22px; font-size: 16px; box-shadow: 0 6px 18px var(--hall-dim); }
+.hall-actions { position: absolute; right: 16px; bottom: 28px; display: grid; gap: 8px; }
+.hall-actions .main { padding: 14px 22px; font-size: 16px; box-shadow: 0 6px 18px var(--hall-dim); }
+/* 방명록과 문 위에 떠 있는 버튼 */
+.hall-spot { position: absolute; left: 0; top: 0; padding: 6px; background: none; border: 0; pointer-events: auto; }
+.hall-spot span { display: block; background: var(--hall-cream); color: var(--hall-text); border: 1px solid var(--accent-soft); border-radius: 99px; padding: 6px 16px; font-size: 14px; white-space: nowrap; }
+.hall-spot.next span { background: var(--hall-text-accent); border-color: var(--hall-text-accent); color: var(--hall-white); animation: hall-spot 1.2s ease-in-out infinite alternate; }
+@keyframes hall-spot { to { transform: translateY(-6px); } }
+.hall-fade { position: absolute; inset: 0; background: var(--hall-white); opacity: 0; transition: opacity ease; }
 .hall-hint { position: absolute; left: 50%; bottom: 158px; transform: translateX(-50%); background: var(--hall-text); color: var(--hall-white); border-radius: 99px; padding: 6px 14px; font-size: 13px; white-space: nowrap; pointer-events: none; animation: hall-hint 7s forwards; }
 @keyframes hall-hint { 85% { opacity: 0.9; } 100% { opacity: 0; } }
 
