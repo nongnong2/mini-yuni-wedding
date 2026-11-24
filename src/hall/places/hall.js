@@ -1,13 +1,13 @@
 import * as THREE from 'three'
-import { archHole, makeBuilder, makePicture, makeTree, standard, wall } from './build'
-import { colors, curtain, makeRandom, merge, place, roundBox, slab } from './shapes'
+import { archHole, makeBuilder, makePicture, makeTree, standard, wall } from '../core/build'
+import { clamp, colors, curtain, makeRandom, merge, place, roundBox, slab } from '../core/shapes'
 
 // 홀의 크기(미터). x: 왼쪽~오른쪽, z: 앞(스크린)~뒤(입구)
-export const BOUNDS = { x0: -8.4, x1: 7.8, z0: -12.4, z1: 9.6 }
+const BOUNDS = { x0: -8.4, x1: 7.8, z0: -12.4, z1: 9.6 }
 const { x0, x1, z0, z1 } = BOUNDS
 const WIDTH = x1 - x0
 const DEPTH = z1 - z0
-export const CENTER = { x: (x0 + x1) / 2, z: (z0 + z1) / 2 }
+const CENTER = { x: (x0 + x1) / 2, z: (z0 + z1) / 2 }
 const WALL_HEIGHT = 5
 
 // 좌우 5석 × 10줄 = 100석
@@ -21,20 +21,35 @@ for (let row = 0; row < 10; row++) {
 // 지나갈 수 없는 곳: [왼쪽, 오른쪽, 앞, 뒤] — 왼쪽 의자, 오른쪽 의자
 const BLOCKS = [[-6.15, -1.35, -5.75, 5.75], [1.35, 6.15, -5.75, 5.75]]
 const BODY = 0.3 // 캐릭터 반지름
-export function blocked(x, z) {
+function blocked(x, z) {
   return x < x0 + 1.35 || x > x1 - 1.35 || z < -7.4 || z > 8.4
     || (z > 8.1 && Math.abs(x) > 1.3)
     || BLOCKS.some((b) => x > b[0] - BODY && x < b[1] + BODY && z > b[2] - BODY && z < b[3] + BODY)
 }
 
 // 입구 쪽 낮은 계단의 높이
-export function floorHeight(x, z) {
+function floorHeight(x, z) {
   if (Math.abs(x) < 2.1 && z > 6.85) return 0.18
   if (Math.abs(x) < 1.7 && z > 6.25) return 0.1
   return 0
 }
 
-export function buildRoom(group, screen) {
+export const COUPLE = { x: 0, y: 0.48, z: -9.5 } // 신랑신부가 선 곳
+
+// 자리 옆 통로 (앉으러 갈 때와 일어났을 때 서는 곳)
+export const aisleBeside = (seat) => ({ x: seat.x < 0 ? -0.9 : 0.9, z: clamp(seat.z, -6.5, 5.9) })
+
+export const hall = {
+  bounds: BOUNDS,
+  blocked,
+  floorHeight,
+  center: CENTER,
+  start: { x: 0, z: 7.4, rotation: Math.PI }, // 들어와서 서는 곳
+  firstStep: { x: 0, z: 5.4 }, // 들어와서 저절로 걸어가는 곳
+  nearEntry: (z) => z > 6.6, // 입구 장식이 보이는 범위
+}
+
+export function buildHall(group, screen) {
   const { add, addMany, bunch, plant, random } = makeBuilder(group, 11)
   const white = colors('white')
   const vertexMaterial = standard({ vertexColors: true, side: THREE.DoubleSide })
@@ -108,7 +123,7 @@ export function buildRoom(group, screen) {
     const a = (Math.PI * i) / 26
     bunch(Math.cos(a) * 1.9, 2 + Math.sin(a) * 1.82, 8.8, 0.12 + 0.12 * Math.abs(Math.cos(a * 0.5 + 0.4)), 3, 1)
   }
-  entry.push(plant(), add(new THREE.TorusGeometry(1.9, 0.09, 10, 40, Math.PI), whiteMaterial, 0, 2, 8.8))
+  entry.push(...plant(), add(new THREE.TorusGeometry(1.9, 0.09, 10, 40, Math.PI), whiteMaterial, 0, 2, 8.8))
 
   // ---------- 화분 나무, 의자 ----------
   const trees = []

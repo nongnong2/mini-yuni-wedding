@@ -6,6 +6,7 @@ export function colors(name) {
 }
 
 export const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+export const turn = (from, to) => Math.atan2(Math.sin(to - from), Math.cos(to - from)) // 가까운 쪽으로 도는 각도
 export const mix = (a, b, k) => a + (b - a) * k // a와 b 사이를 k(0~1) 비율로 섞음
 
 // 같은 seed(시작 숫자)면 항상 같은 난수 → 새로고침해도 꽃과 풀의 위치가 그대로
@@ -25,30 +26,53 @@ export function hash(text) {
   return h
 }
 
-// 위치·회전·크기를 한 번에 담은 행렬
-export function place(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {
-  const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz))
-  return new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), rotation, new THREE.Vector3(sx, sy, sz))
+// 계산용 임시 값. 매 순간 새로 만들지 않고 돌려써서 빠름
+const tempPosition = new THREE.Vector3()
+const tempRotation = new THREE.Quaternion()
+const tempEuler = new THREE.Euler()
+const tempScale = new THREE.Vector3()
+
+// 위치·회전·크기를 이미 있는 행렬에 담음 (매 순간 움직이는 것에 사용)
+export function placeInto(matrix, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {
+  return matrix.compose(tempPosition.set(x, y, z), tempRotation.setFromEuler(tempEuler.set(rx, ry, rz)), tempScale.set(sx, sy, sz))
 }
+// 위치·회전·크기를 새 행렬에 담음
+export const place = (...args) => placeInto(new THREE.Matrix4(), ...args)
 
 // [도형, 색, 위치] 여러 개를 하나로 합침. 한 번에 그릴 수 있어서 빠름
 export function merge(parts) {
-  const position = []
-  const normal = []
-  const color = []
-  for (const [shape, hex, matrix = place()] of parts) {
+  const pieces = parts.map(([shape, hex, matrix]) => {
     const g = shape.index ? shape.toNonIndexed() : shape.clone()
-    g.applyMatrix4(matrix)
-    const c = new THREE.Color(hex)
-    for (const v of g.attributes.position.array) position.push(v)
-    for (const v of g.attributes.normal.array) normal.push(v)
-    for (let i = 0; i < g.attributes.position.count; i++) color.push(c.r, c.g, c.b)
+    if (matrix) g.applyMatrix4(matrix)
+    return { position: g.attributes.position.array, normal: g.attributes.normal.array, color: new THREE.Color(hex) }
+  })
+  const size = pieces.reduce((sum, p) => sum + p.position.length, 0)
+  const position = new Float32Array(size)
+  const normal = new Float32Array(size)
+  const color = new Float32Array(size)
+  let offset = 0
+  for (const p of pieces) {
+    position.set(p.position, offset)
+    normal.set(p.normal, offset)
+    for (let i = 0; i < p.position.length; i += 3) p.color.toArray(color, offset + i)
+    offset += p.position.length
   }
   const out = new THREE.BufferGeometry()
-  out.setAttribute('position', new THREE.Float32BufferAttribute(position, 3))
-  out.setAttribute('normal', new THREE.Float32BufferAttribute(normal, 3))
-  out.setAttribute('color', new THREE.Float32BufferAttribute(color, 3))
+  out.setAttribute('position', new THREE.BufferAttribute(position, 3))
+  out.setAttribute('normal', new THREE.BufferAttribute(normal, 3))
+  out.setAttribute('color', new THREE.BufferAttribute(color, 3))
   return out
+}
+
+// 그림자만 만드는 단순한 모양. mesh는 그림자를 안 만들고, 같은 자리의 shape가 대신 만듦 (그리는 양이 크게 줄어듦)
+export function makeShadow(mesh, shape) {
+  const shadow = new THREE.InstancedMesh(shape, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }), mesh.instanceMatrix.count)
+  shadow.instanceMatrix = mesh.instanceMatrix // 위치를 함께 씀
+  shadow.frustumCulled = false
+  shadow.castShadow = true
+  mesh.castShadow = false
+  mesh.parent.add(shadow)
+  return shadow
 }
 
 // 모서리가 둥근 상자

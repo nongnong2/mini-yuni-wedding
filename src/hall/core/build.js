@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { ball, clamp, colors, makeRandom, merge, mix, place } from './shapes'
+import { ball, clamp, colors, makeRandom, makeShadow, merge, mix, place } from './shapes'
 
 // 로비와 홀을 만들 때 함께 쓰는 도구
 
@@ -42,8 +42,9 @@ export function makeBuilder(group, seed) {
   }
   function plant() {
     const mesh = addMany(flowerShape, standard({ vertexColors: true, roughness: 0.95 }), flowers.map((f) => f.matrix), flowers.map((f) => f.color))
+    const shadow = makeShadow(mesh, new THREE.IcosahedronGeometry(1, 0))
     flowers = []
-    return mesh
+    return [mesh, shadow]
   }
   return { add, addMany, bunch, plant, random }
 }

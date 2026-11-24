@@ -3,6 +3,9 @@ import { initializeApp } from 'firebase/app'
 import { collection, doc, getDocs, getFirestore, limit, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore/lite'
 import { firebaseConfig } from '../data/firebase'
 
+// 글자 수와 글 개수의 한도. 바꾸면 firestore.rules도 함께 바꿔야 함 (password는 최소 글자 수)
+export const LIMITS = { name: 10, text: 200, password: 6, messages: 100 }
+
 const db = getFirestore(initializeApp(firebaseConfig))
 const messagesRef = collection(db, 'messages')
 
@@ -13,9 +16,9 @@ async function hashPassword(id, password) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-// 최신 글 100개를 오래된 순서로 돌려줌
+// 최신 글을 한도만큼 오래된 순서로 돌려줌
 export async function loadMessages() {
-  const snapshot = await getDocs(query(messagesRef, orderBy('createdAt', 'desc'), limit(100)))
+  const snapshot = await getDocs(query(messagesRef, orderBy('createdAt', 'desc'), limit(LIMITS.messages)))
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).reverse()
 }
 

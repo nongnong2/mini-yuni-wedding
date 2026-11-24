@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { ball, colors, lathe, merge, place, roundBox } from './shapes'
+import { ball, colors, lathe, merge, place, roundBox } from '../core/shapes'
 
 export const HAIR_COUNT = 3
 
@@ -90,7 +90,13 @@ export function makeWalker(kind) {
   const group = new THREE.Group()
   const material = bodyMaterial()
   const pivots = { head: 0.7, body: 0, legL: 0.28, legR: 0.28, armL: 0.66, armR: 0.66 } // 관절 높이
-  const walker = { group }
+  const walker = {
+    group,
+    dispose() {
+      for (const mesh of group.children) mesh.geometry.dispose()
+      material.dispose()
+    },
+  }
   for (const name in pivots) {
     const g = merge(parts[name])
     g.translate(0, -pivots[name], 0)
@@ -108,8 +114,18 @@ export function makeSeatedCrowd(kind, hair, max) {
   const g = merge(Object.values(avatarParts(kind, true, hair)).flat())
   g.translate(0, -0.24, 0) // 엉덩이가 원점에 오게
   const mesh = new THREE.InstancedMesh(g, bodyMaterial(), max)
-  mesh.castShadow = mesh.receiveShadow = true
+  mesh.receiveShadow = true
   mesh.frustumCulled = false
   mesh.count = 0
   return mesh
+}
+
+// 앉은 하객의 그림자용 단순한 모양: 머리 + 몸
+export function seatedShadowShape() {
+  const g = merge([
+    [new THREE.SphereGeometry(0.4, 8, 6), colors('white'), place(0, 1.02, 0)],
+    [new THREE.CylinderGeometry(0.16, 0.34, 0.6, 8), colors('white'), place(0, 0.44, 0.02)],
+  ])
+  g.translate(0, -0.24, 0)
+  return g
 }

@@ -1,10 +1,10 @@
 import * as THREE from 'three'
-import { archHole, makeBuilder, makePicture, makeTree, standard, wall } from './build'
-import { clamp, colors, curtain, merge, mix, place, roundBox, slab } from './shapes'
+import { archHole, makeBuilder, makePicture, makeTree, standard, wall } from '../core/build'
+import { colors, curtain, merge, mix, place, roundBox, slab } from '../core/shapes'
 
 // 로비(예식장 입구)의 크기(미터). 안쪽 벽(z0) 가운데에 홀로 들어가는 문이 있음
-export const LOBBY = { x0: -4.6, x1: 4.6, z0: -3.6, z1: 4 }
-const { x0, x1, z0, z1 } = LOBBY
+const BOUNDS = { x0: -4.6, x1: 4.6, z0: -3.6, z1: 4 }
+const { x0, x1, z0, z1 } = BOUNDS
 const WIDTH = x1 - x0
 const DEPTH = z1 - z0
 const CENTER_Z = (z0 + z1) / 2
@@ -13,23 +13,39 @@ const WALL_HEIGHT = 4.9
 const DOOR = { r: 1.15, top: 2.5 } // 문 폭의 절반, 둥근 부분이 시작되는 높이
 const DESK = { x: 2.9, z: -2.2 } // 손님맞이대
 
-export const BOOK = { x: DESK.x - 0.25, y: 1.02, z: DESK.z + 0.06 } // 방명록
-export const BOOK_STAND = { x: BOOK.x, z: -1.2 } // 방명록을 쓸 때 서는 곳
-export const BOARD = { x: -2.65, y: 2.48, z: -2.5 } // 사진 안내판 (모바일 청첩장)
-export const BOARD_STAND = { x: -2.5, z: -1.3 }
-export const DOOR_STAND = { x: 0, z: z0 + 0.85 } // 문 앞
-export const DOOR_LABEL = { x: 0, y: DOOR.top + 1.4, z: z0 + 0.1 }
-export const START = { x: 0, z: 2.5 }
-export const INSIDE = { x: 0, z: z0 - 1.2 } // 문을 지나 이곳에 오면 홀로 바뀜
+const BOOK = { x: DESK.x - 0.25, y: 1.02, z: DESK.z + 0.06 } // 방명록
+const BOOK_STAND = { x: BOOK.x, z: -1.2 } // 방명록을 쓸 때 서는 곳
+const BOARD = { x: -2.65, y: 2.48, z: -2.5 } // 사진 안내판 (모바일 청첩장)
+const BOARD_STAND = { x: -2.5, z: -1.3 }
+const DOOR_STAND = { x: 0, z: z0 + 0.85 } // 문 앞
+const DOOR_LABEL = { x: 0, y: DOOR.top + 1.4, z: z0 + 0.1 }
+const INSIDE = { x: 0, z: z0 - 1.2 } // 문을 지나 이곳에 오면 홀로 바뀜
 
 // 지나갈 수 없는 곳: 손님맞이대, 사진 안내판
 const BLOCKS = [[1.75, 4.05, -2.65, -1.75], [-3.5, -1.8, -3, -2]]
 const BODY = 0.3
-export function lobbyBlocked(x, z) {
+function blocked(x, z) {
   return x < x0 + 1 || x > x1 - 1 || z < z0 + 0.6 || z > z1 - 0.7
     || BLOCKS.some((b) => x > b[0] - BODY && x < b[1] + BODY && z > b[2] - BODY && z < b[3] + BODY)
 }
-export const atDoor = (x, z) => Math.abs(x) < 1 && z < z0 + 1.1
+const atDoor = (x, z) => Math.abs(x) < 1 && z < z0 + 1.1
+
+// 누를 수 있는 곳. label: 버튼을 띄울 위치, stand: 캐릭터가 걸어가 서는 곳
+export const SPOTS = {
+  book: { label: { ...BOOK, y: BOOK.y + 0.42 }, stand: BOOK_STAND },
+  door: { label: DOOR_LABEL, stand: DOOR_STAND },
+  invite: { label: BOARD, stand: BOARD_STAND, hideAtEdge: true }, // 화면 끝에 걸리면 문을 가리므로 숨김
+}
+
+export const lobby = {
+  bounds: BOUNDS,
+  blocked,
+  floorHeight: () => 0.03,
+  atDoor,
+  start: { x: 0, z: 2.5, rotation: Math.PI }, // 처음 서 있는 곳
+  back: { x: 0, z: -1.4, rotation: 0 }, // 홀에서 나왔을 때
+  doorway: [{ x: 0, z: DOOR_STAND.z }, INSIDE], // 문을 지나가는 길
+}
 
 export function buildLobby(group, { names, date, photo }) {
   const { add, addMany, bunch, plant, random } = makeBuilder(group, 21)
@@ -131,10 +147,11 @@ export function buildLobby(group, { names, date, photo }) {
 
   let opened = 0 // 문이 열린 정도 (0 닫힘, 1 열림)
   return {
-    door, book: bookHit, board: boardHit,
+    targets: { door, book: bookHit, invite: boardHit }, // 이름은 SPOTS와 같음
     animate(open, dt) {
+      if (Math.abs(opened - (open ? 1 : 0)) < 0.0005) return // 다 움직였으면 쉼
       opened = mix(opened, open ? 1 : 0, 1 - Math.exp(-dt * 2.4))
-      for (const { pivot, s } of leaves) pivot.rotation.y = -s * clamp(opened, 0, 1) * 1.42
+      for (const { pivot, s } of leaves) pivot.rotation.y = -s * opened * 1.42
     },
   }
 }
