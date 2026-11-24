@@ -29,6 +29,19 @@ export const wedding = {
     { title: '주차', desc: '건물 지하 주차장 2시간 무료' },
   ],
 
+  // 온라인 하객석 문구
+  onlineHall: {
+    label: 'ONLINE',
+    title: '온라인 하객석',
+    desc: `멀리 계셔도 함께해 주세요.
+온라인 웨딩홀에 들어와
+축하 인사를 남기실 수 있습니다.`,
+    button: '입장하기',
+    welcome: '온라인 하객석에 오신 걸 환영합니다',
+    screenTitle: '저희 결혼합니다',
+    notice: '이름과 글은 청첩장을 보는 모두에게 공개됩니다.',
+  },
+
   cover: 'images/cover.svg',
   gallery: [
     'images/gallery-1.svg', 'images/gallery-2.svg', 'images/gallery-3.svg',

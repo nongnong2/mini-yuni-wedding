@@ -7,6 +7,42 @@
   --text: #4a3f35;
   --text-soft: #8c7d6e;
   --serif: 'Noto Serif KR', serif;
+
+  /* 온라인 홀 색상 (3D 홀도 여기서 읽음) */
+  --hall-background: #efe8e1;
+  --hall-wall: #fbf8f4;
+  --hall-floor: #f1e9e0;
+  --hall-base: #e6dacd;
+  --hall-grass: #a9bf8f;
+  --hall-leaf: #8faa78;
+  --hall-leaf-soft: #a8bd92;
+  --hall-white: #ffffff;
+  --hall-cream: #fffaf3;
+  --hall-curtain: #fffdfa;
+  --hall-pink: #f0c4bd;
+  --hall-pink-soft: #f9e3dd;
+  --hall-gold: #e3cfae;
+  --hall-wood: #b89878;
+  --hall-sky: #eaf1ec;
+  --hall-skin: #fcdfca;
+  --hall-eye: #43342c;
+  --hall-cheek: #f6b7ab;
+  --hall-mouth: #b9695d;
+  --hall-hair1: #5f4839;
+  --hall-hair2: #3f3531;
+  --hall-hair3: #93694b;
+  --hall-suit: #8c94a6;      /* 남자 하객 옷 */
+  --hall-suit-shoe: #5a4a40;
+  --hall-tie: #e3a49c;
+  --hall-dress: #eebdb6;     /* 여자 하객 옷 */
+  --hall-dress-shoe: #d99c94;
+  --hall-groom: #4c4a50;     /* 신랑 옷 */
+  --hall-light-sun: #fff4e4;
+  --hall-light-ground: #f3e8dc;
+  --hall-text: #4a3f35;
+  --hall-text-accent: #8a6748;
+  --hall-dim: rgba(74, 63, 53, 0.4);
+  --hall-error: #b5483c;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -148,3 +184,67 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
 .account-item .role { color: var(--text-soft); font-size: 12px; }
 
 footer { padding: 40px 0; text-align: center; color: var(--text-soft); font-size: 12px; }
+
+/* ---------- 온라인 하객석 ---------- */
+.hall-enter { margin-top: 28px; padding: 10px 28px; font-size: 15px; }
+.hall {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--hall-background);
+  overflow: hidden;
+  line-height: 1.6;
+  word-break: keep-all;
+  touch-action: none; /* 손가락으로 끌어도 페이지가 움직이지 않게 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.hall [hidden] { display: none; }
+.hall-loading { display: grid; place-items: center; }
+.hall-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hall-overlay { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.hall-tag, .hall-bubble { position: absolute; left: 0; top: 0; width: max-content; }
+.hall-tag { font-size: 12px; background: var(--hall-cream); border-radius: 99px; padding: 1px 9px; opacity: 0.92; }
+.hall-bubble { max-width: min(250px, 72vw); background: var(--hall-white); border-radius: 16px; padding: 11px 15px; font-size: 15px; box-shadow: 0 8px 24px var(--hall-dim); overflow-wrap: anywhere; white-space: pre-line; }
+.hall-bubble-name { color: var(--hall-text-accent); font-size: 13px; font-weight: 600; }
+
+.hall-top { position: absolute; top: 14px; left: 16px; font-family: var(--serif); font-weight: 600; background: var(--hall-cream); border-radius: 14px; padding: 5px 14px 6px; opacity: 0.92; pointer-events: none; }
+.hall-top small { display: block; font-size: 13px; font-weight: 400; color: var(--text-soft); }
+.hall-bar { position: absolute; top: 14px; right: 16px; display: flex; gap: 6px; }
+.hall-btn { background: var(--hall-cream); border: 1px solid var(--accent-soft); border-radius: 99px; padding: 8px 14px; font-size: 14px; }
+.hall-btn[aria-pressed="true"] { border-color: var(--hall-text-accent); box-shadow: inset 0 0 0 1px var(--hall-text-accent); }
+.hall-btn.main { background: var(--hall-text-accent); border-color: var(--hall-text-accent); color: var(--hall-white); }
+.hall-btn:disabled { opacity: 0.6; }
+.hall-btn.wide { border-radius: 12px; padding: 12px; font-size: 16px; }
+.hall button:focus-visible { outline: 2px solid var(--hall-text-accent); outline-offset: 2px; }
+
+.hall-stick { position: absolute; left: 16px; bottom: 24px; width: 116px; height: 116px; border-radius: 50%; background: var(--hall-cream); border: 1px solid var(--accent-soft); opacity: 0.8; touch-action: none; }
+.hall-stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px; border-radius: 50%; background: var(--hall-text-accent); }
+.hall-write { position: absolute; right: 16px; bottom: 34px; padding: 14px 22px; font-size: 16px; box-shadow: 0 6px 18px var(--hall-dim); }
+.hall-hint { position: absolute; left: 50%; bottom: 158px; transform: translateX(-50%); background: var(--hall-text); color: var(--hall-white); border-radius: 99px; padding: 6px 14px; font-size: 13px; white-space: nowrap; pointer-events: none; animation: hall-hint 7s forwards; }
+@keyframes hall-hint { 85% { opacity: 0.9; } 100% { opacity: 0; } }
+
+.hall-card { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); width: min(400px, calc(100% - 32px)); max-height: calc(100% - 100px); overflow-y: auto; touch-action: pan-y; background: var(--hall-cream); border-radius: 20px; padding: 18px 20px 20px; box-shadow: 0 14px 40px var(--hall-dim); display: grid; gap: 12px; }
+.hall-card h2, .hall-sheet h2 { font-family: var(--serif); font-size: 18px; }
+.hall-card h2 { text-align: center; }
+.hall-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hall-pick button { border: 1px solid var(--accent-soft); border-radius: 14px; background: var(--hall-white); padding: 4px 4px 8px; display: grid; justify-items: center; }
+.hall-pick button[aria-pressed="true"] { border-color: var(--hall-text-accent); box-shadow: inset 0 0 0 1px var(--hall-text-accent); }
+.hall-pick img { width: 92px; height: 104px; object-fit: contain; pointer-events: none; }
+.hall input, .hall textarea { width: 100%; min-width: 0; font: inherit; font-size: 16px; color: inherit; border: 1px solid var(--accent-soft); border-radius: 10px; background: var(--hall-white); padding: 10px 12px; user-select: text; -webkit-user-select: text; }
+.hall textarea { height: 104px; resize: none; }
+
+.hall-sheet { position: absolute; inset: 0; background: var(--hall-dim); display: grid; place-items: end center; }
+.hall-sheet > div { width: min(480px, 100%); max-height: 86vh; overflow-y: auto; touch-action: pan-y; background: var(--hall-cream); border-radius: 20px 20px 0 0; padding: 20px 20px 24px; display: grid; gap: 12px; }
+.hall-form { display: grid; gap: 12px; }
+.hall-form label { display: grid; gap: 4px; font-size: 14px; color: var(--text-soft); }
+.hall-form small { color: var(--text-soft); }
+.hall-error { color: var(--hall-error); font-size: 14px; }
+.hall-row { display: flex; gap: 8px; }
+.hall-row .hall-btn { flex: 1; border-radius: 12px; padding: 12px; white-space: nowrap; }
+.hall-messages { list-style: none; }
+.hall-messages li { padding: 12px 0; border-top: 1px solid var(--accent-soft); }
+.hall-messages b { font-size: 14px; color: var(--hall-text-accent); }
+.hall-messages p { overflow-wrap: anywhere; white-space: pre-line; }
+.hall-delete { float: right; font-size: 13px; color: var(--text-soft); padding: 4px 0 4px 12px; }
+.hall ~ .toast { bottom: 200px; } /* 홀 안에서는 조이스틱·버튼 위에 알림을 띄움 */
