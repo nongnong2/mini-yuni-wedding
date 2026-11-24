@@ -8,7 +8,11 @@ const AVATARS = [['woman', '여자'], ['man', '남자']]
 const STICK_RANGE = 46 // 조이스틱을 끝까지 민 거리(px)
 const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
 
-export default function HallScreen({ onClose, onToast }) {
+const MODE_NAMES = { stage: '신랑신부', me: '나', whole: '홀 전체' }
+
+// hidden: 청첩장을 보는 동안 잠시 숨김 (있던 자리는 그대로)
+export default function HallScreen({ hidden, onClose, onInvite, onToast }) {
+  const rootRef = useRef(null)
   const canvasRef = useRef(null)
   const overlayRef = useRef(null)
   const knobRef = useRef(null)
@@ -19,6 +23,7 @@ export default function HallScreen({ onClose, onToast }) {
   const [step, setStep] = useState('start') // start: 캐릭터 고르기, play: 홀 안
   const [where, setWhere] = useState('lobby') // lobby: 예식장 입구, hall: 예식장 안
   const [seated, setSeated] = useState(false)
+  const [mode, setMode] = useState('me') // 시점: stage, me, whole
   const [mineId, setMineId] = useState('') // 방금 내가 남긴 글
   const [sheet, setSheet] = useState('') // 열린 창: '', 'write', 'list', 'door'
   const [avatar, setAvatar] = useState('woman')
@@ -28,7 +33,6 @@ export default function HallScreen({ onClose, onToast }) {
 
   // 홀 만들기 (화면이 닫히면 정리)
   useEffect(() => {
-    document.body.style.overflow = 'hidden' // 뒤쪽 청첩장이 스크롤되지 않게
     try {
       hall.current = createHall({
         canvas: canvasRef.current,
@@ -39,22 +43,51 @@ export default function HallScreen({ onClose, onToast }) {
           date: formatDate(wedding.date),
           photo: wedding.cover,
         },
-        labels: { book: wedding.onlineHall.book, door: wedding.onlineHall.door },
+        labels: { book: wedding.onlineHall.book, door: wedding.onlineHall.door, invite: wedding.onlineHall.invite },
         onBook: () => setSheet('write'),
+        onInvite,
         onDoor: () => setSheet('door'),
         onWhere: (next) => { setWhere(next); setSeated(false) },
         onSeat: setSeated,
+        onMode: setMode,
       })
       setPortraits(hall.current.portraits)
     } catch {
       setNoWebgl(true) // 3D 대신 글 목록으로
     }
     return () => {
-      document.body.style.overflow = ''
       hall.current?.dispose()
       hall.current = null
     }
   }, [])
+
+  // 아이폰은 키보드가 화면을 덮으므로, 가려진 높이만큼 창을 올림
+  useEffect(() => {
+    const v = window.visualViewport
+    if (!v) return
+    const update = () => {
+      const covered = v.scale > 1.01 ? 0 : Math.max(0, window.innerHeight - v.height - v.offsetTop) // 화면을 확대한 경우는 제외
+      rootRef.current?.style.setProperty('--keyboard', `${covered}px`)
+    }
+    v.addEventListener('resize', update)
+    v.addEventListener('scroll', update)
+    return () => {
+      v.removeEventListener('resize', update)
+      v.removeEventListener('scroll', update)
+    }
+  }, [])
+
+  // 홀이 보이는 동안에는 뒤쪽 청첩장이 스크롤되지 않게
+  useEffect(() => {
+    if (hidden) return
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [hidden])
+  useEffect(() => {
+    if (!hidden) return
+    hall.current?.pause(true)
+    return () => hall.current?.pause(false)
+  }, [hidden])
 
   // 방명록 불러오기
   useEffect(() => {
@@ -69,7 +102,7 @@ export default function HallScreen({ onClose, onToast }) {
 
   // PC 방향키
   useEffect(() => {
-    if (step !== 'play' || sheet) return
+    if (step !== 'play' || sheet || hidden) return
     const down = (e) => {
       if (!ARROWS.includes(e.code)) return
       e.preventDefault()
@@ -83,7 +116,7 @@ export default function HallScreen({ onClose, onToast }) {
       window.removeEventListener('keyup', up)
       hall.current?.clearKeys()
     }
-  }, [step, sheet])
+  }, [step, sheet, hidden])
 
   function enter(e) {
     e.preventDefault()
@@ -143,7 +176,7 @@ export default function HallScreen({ onClose, onToast }) {
   const countText = { loading: '방명록 불러오는 중', ok: `방명록 ${messages.length}개`, error: '방명록을 불러오지 못했습니다' }[loadState]
 
   return (
-    <div className="hall">
+    <div ref={rootRef} className="hall" hidden={hidden}>
       <canvas
         ref={canvasRef} className="hall-canvas" aria-label="온라인 웨딩홀"
         onPointerDown={canvasDown} onPointerMove={canvasMove} onPointerUp={canvasUp} onPointerCancel={() => { drag.current = null }}
@@ -177,7 +210,7 @@ export default function HallScreen({ onClose, onToast }) {
 
       {step === 'play' && (
         <>
-          <p key={where + wrote} className="hall-hint">{where === 'hall' ? '바닥을 누르면 걸어가요. 하객을 누르면 글이 보여요' : wrote ? '문을 누르면 예식장으로 들어가요' : '손님맞이대의 방명록을 눌러 보세요'}</p>
+          {!seated && <p key={where + wrote} className={where === 'lobby' ? 'hall-hint lobby' : 'hall-hint'}>{where === 'hall' ? '바닥을 누르면 걸어가요. 하객을 누르면 글이 보여요' : wrote ? '문을 누르면 예식장으로 들어가요' : '손님맞이대의 방명록을 눌러 보세요'}</p>}
           <div
             className="hall-stick"
             onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); moveStick(e) }}
@@ -186,9 +219,13 @@ export default function HallScreen({ onClose, onToast }) {
           >
             <i ref={knobRef} />
           </div>
+          {where === 'hall' && <button className="hall-btn hall-invite" onClick={onInvite}>{wedding.onlineHall.invite}</button>}
           {where === 'hall' && (
             <div className="hall-actions">
-              {wrote && !seated && <button className="hall-btn main" onClick={() => hall.current.sit()}>내 자리에 앉기</button>}
+              {seated
+                ? <button className="hall-btn" onClick={() => hall.current.stand()}>일어나기</button>
+                : wrote && <button className="hall-btn main" onClick={() => hall.current.sit()}>내 자리에 앉기</button>}
+              <button className="hall-btn" onClick={() => hall.current.nextMode()}>시점 전환: {MODE_NAMES[mode]}</button>
               <button className="hall-btn" onClick={() => hall.current.toLobby()}>로비로 나가기</button>
             </div>
           )}

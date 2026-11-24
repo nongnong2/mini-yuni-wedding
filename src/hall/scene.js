@@ -1,13 +1,15 @@
 import * as THREE from 'three'
 import { HAIR_COUNT, makeSeatedCrowd, makeWalker } from './avatars'
-import { BOOK, BOOK_STAND, DOOR_LABEL, DOOR_STAND, INSIDE, LOBBY, START, atDoor, buildLobby, lobbyBlocked } from './lobby'
+import { BOARD, BOARD_STAND, BOOK, BOOK_STAND, DOOR_LABEL, DOOR_STAND, INSIDE, LOBBY, START, atDoor, buildLobby, lobbyBlocked } from './lobby'
 import { makePathFinder } from './path'
-import { BOUNDS, SEATS, blocked, buildRoom, floorHeight } from './room'
+import { BOUNDS, CENTER, SEATS, blocked, buildRoom, floorHeight } from './room'
 import { clamp, colors, hash, makeRandom, mix, place } from './shapes'
 
 const SPEED = 3.6 // 1초에 걷는 거리(m)
 const MAX_GUESTS = SEATS.length
 const PETALS = 140
+const COUPLE = { x: 0, z: -9.5 } // 신랑신부가 선 곳
+const MODES = ['stage', 'me', 'whole'] // 시점: 신랑신부, 나, 홀 전체
 
 const turn = (from, to) => Math.atan2(Math.sin(to - from), Math.cos(to - from)) // 가까운 쪽으로 도는 각도
 
@@ -16,11 +18,12 @@ const FADE = 450 // 로비 ↔ 홀을 오갈 때 화면이 하얘지는 시간(�
 /**
  * 로비(예식장 입구)와 온라인 웨딩홀을 canvas에 그림.
  * overlay: 이름표와 말풍선을 올릴 빈 div, screen: 스크린에 보일 { title, names, date, photo }
- * labels: 방명록과 문 위에 띄울 글자 { book, door }
- * onBook: 방명록 앞에 왔을 때, onDoor: 글을 안 남기고 문 앞에 왔을 때,
- * onWhere: 로비('lobby')나 홀('hall')에 도착했을 때, onSeat: 앉거나(true) 일어났을 때(false)
+ * labels: 방명록, 문, 안내판 위에 띄울 글자 { book, door, invite }
+ * onBook: 방명록 앞에 왔을 때, onInvite: 안내판 앞에 왔을 때, onDoor: 글을 안 남기고 문 앞에 왔을 때,
+ * onWhere: 로비('lobby')나 홀('hall')에 도착했을 때, onSeat: 앉거나(true) 일어났을 때(false),
+ * onMode: 시점이 바뀌었을 때(MODES 중 하나)
  */
-export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, onWhere, onSeat }) {
+export function createHall({ canvas, overlay, screen, labels, onBook, onInvite, onDoor, onWhere, onSeat, onMode }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }) // 3D를 못 쓰는 기기면 여기서 오류가 남
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -56,9 +59,9 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
   // ---------- 신랑신부 ----------
   const groom = makeWalker('groom')
   const bride = makeWalker('bride')
-  groom.group.position.set(-0.5, 0.48, -9.5)
+  groom.group.position.set(-0.5, 0.48, COUPLE.z)
   groom.group.rotation.y = 0.22
-  bride.group.position.set(0.5, 0.48, -9.5)
+  bride.group.position.set(0.5, 0.48, COUPLE.z)
   bride.group.rotation.y = -0.22
   bride.armL.rotation.x = bride.armR.rotation.x = -0.7
   groom.armR.rotation.x = -0.35
@@ -111,10 +114,9 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
   let doorOpen = false
   let wasAtDoor = false
   let yaw = 0 // 시점 회전
-  let focus = null // 카메라가 비추는 하객
+  let mode = 'me' // 지금 시점
   let selected = null // 말풍선을 띄운 하객
   let selectedUntil = 0
-  let focusTimer = 0
 
   const marker = new THREE.Mesh(
     new THREE.RingGeometry(0.2, 0.28, 32).rotateX(-Math.PI / 2),
@@ -128,10 +130,12 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
   }
   // (x, z)까지 걸어간 뒤 then을 실행
   function walkTo(target, then = null) {
+    if (mode !== 'me') setMode('me')
     path = rooms[where].findPath(me, target)
     arrive = then
   }
   const goBook = () => { if (!busy) walkTo(BOOK_STAND, () => { me.rotation = Math.PI; onBook() }) }
+  const goBoard = () => { if (!busy) walkTo(BOARD_STAND, () => { me.rotation = Math.PI; onInvite() }) }
   const goDoor = () => { if (!busy) { wasAtDoor = false; walkTo(DOOR_STAND) } }
 
   // 문 앞에 옴: 열려 있으면 안으로 걸어 들어감
@@ -158,8 +162,8 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
       hallGroup.visible = next === 'hall'
       const inHall = next === 'hall'
       Object.assign(me, inHall ? { x: 0, z: 7.4, rotation: Math.PI, seat: null } : { x: 0, z: -1.4, rotation: 0, seat: null })
-      selected = focus = null
-      yaw = 0
+      selected = null
+      setMode('me')
       wasAtDoor = false
       Object.assign(view, viewGoal())
       if (inHall) {
@@ -206,16 +210,21 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
   function sitDown() {
     const guest = guests.find((g) => g.message.id === mineId) // 걷는 사이에 글이 지워졌을 수 있음
     if (!guest) return
-    me.seat = focus = guest
+    me.seat = guest
     onSeat(true)
-    select(guest, 8)
     scatter(guest)
-    clearTimeout(focusTimer)
-    focusTimer = setTimeout(() => { focus = null }, 4200)
+    setMode('stage') // 앉으면 신랑신부가 보이는 시점으로
+  }
+  function setMode(next) {
+    mode = next
+    yaw = 0
+    if (me.seat && mode === 'me') select(me.seat, 8) // 내 모습을 볼 때는 내 글도 함께
+    else if (me.seat) selected = null
+    onMode(next)
   }
 
   function move(dt) {
-    if (!me.walker || focus) return
+    if (!me.walker) return
     const { blocked } = rooms[where]
     let ix = stick.x + (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0)
     let iy = stick.y + (keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0)
@@ -232,6 +241,7 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
       path = []
       arrive = null
       if (me.seat) standUp()
+      if (mode !== 'me') setMode('me') // 걸으면 나를 따라오는 시점으로
     } else if (path.length) { // 누른 곳까지 자동으로 걷기
       const px = path[0].x - me.x
       const pz = path[0].z - me.z
@@ -324,15 +334,29 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
   function viewGoal() {
     const t = Math.tan((camera.fov * Math.PI) / 360)
     if (!me.walker) { // 입장 전: 로비 전체가 보이게
-      const wide = camera.aspect > 1
-      return { x: 0, y: 1, z: wide ? 2 : 2.4, distance: Math.max(11 / (2 * t * camera.aspect), 11 / (2 * t)), pitch: 0.5, yaw: wide ? 0.3 : 0.2 }
+      const wide = camera.aspect > 1 // 가로로 눕힌 폰은 고르기 창이 오른쪽에 있어 장면을 왼쪽으로 비킴
+      return { x: wide && height < 500 && width >= 540 ? 2.6 : 0, y: 1, z: wide ? 2 : 2.4, distance: Math.max(11 / (2 * t * camera.aspect), 11 / (2 * t)), pitch: 0.5, yaw: wide ? 0.3 : 0.2 }
     }
     if (where === 'lobby') {
       return { x: me.x * 0.45, y: 1.3, z: me.z * 0.35 - 1.1, distance: clamp(7.4 / (2 * t * Math.min(camera.aspect, 1)), 20, 36), pitch: 0.42, yaw }
     }
     const distance = clamp(6.4 / (2 * t * Math.min(camera.aspect, 1)), 20, 28)
-    if (focus) return { x: focus.x, y: 0.9, z: focus.z, distance: distance * 0.7, pitch: 0.86, yaw }
+    if (mode === 'whole') return { x: CENTER.x, y: 0, z: -0.5, distance: Math.max(20 / (2 * t * camera.aspect), 22 / (2 * t)), pitch: 0.72, yaw }
+    if (mode === 'stage') return stageGoal(t)
+    if (me.seat) return { x: me.seat.x, y: 0.9, z: me.seat.z, distance: distance * 0.7, pitch: 0.86, yaw }
     return { x: me.x * 0.8, y: 0.9, z: me.z - 1.2, distance, pitch: 0.56, yaw }
+  }
+  // 내 뒤에서 신랑신부를 바라보는 시점: 나와 신랑신부가 한 화면에 들어올 만큼 뒤로 물러남
+  function stageGoal(t) {
+    const from = me.seat ?? me
+    const dx = from.x - COUPLE.x
+    const dz = Math.max(1, from.z - COUPLE.z)
+    const pitch = 0.3
+    const angle = clamp(Math.atan2(dx, dz), -0.22, 0.22)
+    const side = Math.abs(dx * Math.cos(angle) - dz * Math.sin(angle)) // 화면에서 좌우로 벌어진 거리
+    const tall = (dz * Math.sin(pitch)) / 0.42
+    const distance = clamp(Math.max(tall, (side * 1.3 + 2) / camera.aspect) / (2 * t), 15, 34)
+    return { x: COUPLE.x + dx * 0.35, y: 0.9, z: COUPLE.z + dz / 2, distance, pitch, yaw: angle + yaw }
   }
   function moveCamera(k) {
     const goal = viewGoal()
@@ -345,6 +369,7 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
     camera.updateMatrixWorld()
   }
   function resize() {
+    if (!canvas.parentElement.clientWidth) return // 청첩장을 보는 동안 숨어 있을 때
     width = canvas.parentElement.clientWidth
     height = canvas.parentElement.clientHeight
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1))
@@ -370,8 +395,11 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
     overlay.append(button)
     return button
   }
+  const meTag = div('hall-tag me') // 신랑신부 시점에서 내 자리를 알려 줌
+  meTag.textContent = '나'
   const bookSpot = spot(labels.book, goBook)
   const doorSpot = spot(labels.door, goDoor)
+  const boardSpot = spot(labels.invite, goBoard)
   const bubble = div('hall-bubble')
   const bubbleName = div('hall-bubble-name', bubble)
   const bubbleText = div('', bubble)
@@ -388,12 +416,13 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
   }
   function drawOverlay(time) {
     const showSpots = Boolean(me.walker) && where === 'lobby' && !busy
-    for (const [button, p, lift] of [[bookSpot, BOOK, 0.42], [doorSpot, DOOR_LABEL, 0]]) {
+    for (const [button, p, lift] of [[bookSpot, BOOK, 0.42], [doorSpot, DOOR_LABEL, 0], [boardSpot, BOARD, 0]]) {
       button.hidden = !showSpots
       if (!showSpots) continue
       const [x, y] = toScreen(p.x, p.y + lift, p.z)
       const half = button.offsetWidth / 2 + 8
-      put(button, clamp(x, half, width - half), Math.max(y, 120))
+      if (button === boardSpot) button.hidden = x < half * 0.6 // 안내판이 화면 밖이면 문을 가리지 않게 숨김
+      put(button, clamp(x, half, width - half), Math.max(y, Math.min(120, height * 0.2)))
     }
     bookSpot.classList.toggle('next', !doorOpen) // 다음에 할 일을 강조
     doorSpot.classList.toggle('next', doorOpen)
@@ -409,7 +438,9 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
       tag.textContent = g.message.name
       put(tag, ...toScreen(g.x, 1.72, g.z))
     })
-    if (selected && time > selectedUntil && !focus) selected = null
+    meTag.hidden = !me.seat || mode === 'me'
+    if (!meTag.hidden) put(meTag, ...toScreen(me.seat.x, 1.75, me.seat.z))
+    if (selected && time > selectedUntil) selected = null
     bubble.hidden = !selected
     if (selected) {
       const [x, y] = toScreen(selected.x, 1.9, selected.z)
@@ -418,17 +449,17 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
     }
   }
 
-  // 화면을 톡 누름: 하객이면 말풍선, 방명록·문이면 그 일을 하고, 바닥이면 그곳으로 걷기
+  // 화면을 톡 누름: 하객이면 말풍선, 방명록·문·안내판이면 그 일을 하고, 바닥이면 그곳으로 걷기
   const ray = new THREE.Raycaster()
   const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
   function tap(clientX, clientY) {
-    if (!me.walker || focus || busy) return
-    const { bounds, findPath } = rooms[where]
+    if (!me.walker || busy) return
+    const { bounds } = rooms[where]
     const box = canvas.getBoundingClientRect()
     ray.setFromCamera(new THREE.Vector2(((clientX - box.left) / width) * 2 - 1, (-(clientY - box.top) / height) * 2 + 1), camera)
     if (where === 'lobby') {
-      const hit = ray.intersectObjects([lobby.door, lobby.book])[0]
-      if (hit) { (hit.object === lobby.book ? goBook : goDoor)(); return }
+      const hit = ray.intersectObjects([lobby.door, lobby.book, lobby.board])[0]
+      if (hit) { (hit.object === lobby.book ? goBook : hit.object === lobby.board ? goBoard : goDoor)(); return }
     }
     let best = null
     for (const { mesh, list } of Object.values(crowds)) {
@@ -439,11 +470,10 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
     }
     if (best) { select(best.guest, 6); return }
     selected = null
+    if (me.seat) return // 앉아 있을 때 실수로 일어나지 않게
     const p = ray.ray.intersectPlane(ground, new THREE.Vector3())
     if (!p || p.x < bounds.x0 || p.x > bounds.x1 || p.z < bounds.z0 || p.z > bounds.z1) return
-    if (me.seat) standUp()
-    arrive = null
-    path = findPath(me, p)
+    walkTo(p)
   }
 
   // 캐릭터 고르기 화면에 쓸 그림
@@ -478,7 +508,7 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
     animatePeople(dt, time)
     animatePetals(dt, time)
     lobby.animate(doorOpen, dt)
-    const showEntry = me.z > 6.6 && !focus
+    const showEntry = me.z > 6.6 && mode === 'me' && !me.seat
     entry.forEach((o) => { o.visible = showEntry })
     marker.visible = path.length > 0 && !busy
     if (path.length) {
@@ -498,15 +528,23 @@ export function createHall({ canvas, overlay, screen, labels, onBook, onDoor, on
 
   return {
     portraits, enter, setMessages, tap, wrote, passDoor, sit,
+    stand() { if (me.seat) { standUp(); setMode('me') } },
+    nextMode() { if (!busy) setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]) },
+    // 청첩장을 보는 동안에는 그리기를 멈춤 (배터리 절약)
+    pause(stop) {
+      cancelAnimationFrame(frameId)
+      stick.x = stick.y = 0
+      keys.clear()
+      if (!stop) frame()
+    },
     toLobby() { if (!busy) change('lobby') },
     setStick(x, y) { stick.x = x; stick.y = y },
     setKey(code, down) { if (down) keys.add(code); else keys.delete(code) },
     clearKeys() { keys.clear() },
     get yaw() { return yaw },
-    setYaw(value) { const max = where === 'lobby' ? 0.6 : 1.2; yaw = clamp(value, -max, max) },
+    setYaw(value) { const max = where === 'lobby' || mode === 'stage' ? 0.6 : 1.2; yaw = clamp(value, -max, max) },
     dispose() {
       cancelAnimationFrame(frameId)
-      clearTimeout(focusTimer)
       clearTimeout(changeTimer)
       observer.disconnect()
       overlay.replaceChildren()

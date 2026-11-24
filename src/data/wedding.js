@@ -40,6 +40,7 @@ export const wedding = {
     welcome: '온라인 하객석에 오신 걸 환영합니다',
     book: '방명록',
     door: '예식장 입장',
+    invite: '모바일 청첩장',
     screenTitle: '저희 결혼합니다',
     notice: '이름과 글은 청첩장을 보는 모두에게 공개됩니다.',
   },

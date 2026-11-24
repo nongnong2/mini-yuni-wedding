@@ -7,6 +7,7 @@ React + Vite 정적 사이트. GitHub Pages로 배포하고 링크/QR로 공유�
 - 사진은 `public/images/`에 두고 경로는 `images/파일명` 형식(앞에 `/` 없이 — base가 `./`라서).
 - 색상은 `src/styles/global.css`의 `:root` 변수로만 관리.
 - 온라인 하객석: 3D는 `src/hall/`, 화면은 `src/components/HallScreen.jsx`, 글 저장은 `src/utils/guestbook.js`(Firestore). 3D 색도 `--hall-*` 변수만 사용.
+- 휴대폰이 기본 화면. 온라인 하객석을 고칠 때는 폭 320px부터, 세로·가로 모두 버튼이 겹치거나 잘리지 않는지 확인.
 - 방명록 규칙은 `firestore.rules`. 파일을 고쳐도 자동 적용되지 않으므로 Firebase 콘솔의 규칙 탭에 붙여넣고 게시해야 함.
 - 방명록 글은 React 출력이나 `textContent`로만 표시 (`dangerouslySetInnerHTML`·`innerHTML` 금지).
 - 사용자는 코딩 입문자: 변경 시 이유와 핵심 라인을 짧게 설명.

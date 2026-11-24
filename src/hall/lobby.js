@@ -15,6 +15,8 @@ const DESK = { x: 2.9, z: -2.2 } // 손님맞이대
 
 export const BOOK = { x: DESK.x - 0.25, y: 1.02, z: DESK.z + 0.06 } // 방명록
 export const BOOK_STAND = { x: BOOK.x, z: -1.2 } // 방명록을 쓸 때 서는 곳
+export const BOARD = { x: -2.65, y: 2.48, z: -2.5 } // 사진 안내판 (모바일 청첩장)
+export const BOARD_STAND = { x: -2.5, z: -1.3 }
 export const DOOR_STAND = { x: 0, z: z0 + 0.85 } // 문 앞
 export const DOOR_LABEL = { x: 0, y: DOOR.top + 1.4, z: z0 + 0.1 }
 export const START = { x: 0, z: 2.5 }
@@ -106,7 +108,8 @@ export function buildLobby(group, { names, date, photo }) {
     [new THREE.CylinderGeometry(0.035, 0.035, 2.2, 8), colors('wood'), place(0, 1.05, -0.35, 0.25)],
     [roundBox(1.3, 0.07, 0.16, 0.03), colors('wood'), place(0, 0.5, 0.06)],
   ])
-  add(board, vertexMaterial, -2.65, 0, -2.5).rotation.y = 0.14
+  add(board, vertexMaterial, BOARD.x, 0, BOARD.z).rotation.y = 0.14
+  const boardHit = add(new THREE.BoxGeometry(1.5, 2.4, 0.5), hit, BOARD.x, 1.2, BOARD.z, false)
   const picture = makePicture(480, 640, photo, names, (pen, putPhoto, serif) => {
     putPhoto(28, 28, 424, 450)
     pen.fillStyle = colors('text')
@@ -128,7 +131,7 @@ export function buildLobby(group, { names, date, photo }) {
 
   let opened = 0 // 문이 열린 정도 (0 닫힘, 1 열림)
   return {
-    door, book: bookHit,
+    door, book: bookHit, board: boardHit,
     animate(open, dt) {
       opened = mix(opened, open ? 1 : 0, 1 - Math.exp(-dt * 2.4))
       for (const { pivot, s } of leaves) pivot.rotation.y = -s * clamp(opened, 0, 1) * 1.42

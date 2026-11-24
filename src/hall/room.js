@@ -7,7 +7,7 @@ export const BOUNDS = { x0: -8.4, x1: 7.8, z0: -12.4, z1: 9.6 }
 const { x0, x1, z0, z1 } = BOUNDS
 const WIDTH = x1 - x0
 const DEPTH = z1 - z0
-const CENTER = { x: (x0 + x1) / 2, z: (z0 + z1) / 2 }
+export const CENTER = { x: (x0 + x1) / 2, z: (z0 + z1) / 2 }
 const WALL_HEIGHT = 5
 
 // 좌우 5석 × 10줄 = 100석
