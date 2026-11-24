@@ -6,6 +6,11 @@
   --accent-soft: #e9dcc9;
   --text: #4a3f35;
   --text-soft: #8c7d6e;
+  --white: #fff;        /* 카드, 버튼 배경 */
+  --sunday: #d3786e;    /* 달력의 일요일 */
+  --toast: rgba(74, 63, 53, 0.9);      /* 하단 알림 배경 */
+  --photo-back: rgba(0, 0, 0, 0.92);   /* 사진 크게 보기 배경 */
+  --photo-text: #ccc;
   --serif: 'Noto Serif KR', serif;
 
   /* 온라인 홀 색상 (3D 홀도 여기서 읽음) */
@@ -63,8 +68,8 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
   left: 50%;
   bottom: 40px;
   transform: translateX(-50%);
-  background: rgba(74, 63, 53, 0.9);
-  color: #fff;
+  background: var(--toast);
+  color: var(--white);
   padding: 10px 20px;
   border-radius: 20px;
   font-size: 14px;

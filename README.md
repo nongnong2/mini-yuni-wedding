@@ -60,3 +60,21 @@ npm run preview  # 빌드 결과 미리보기
 1. Firebase 콘솔에서 프로젝트 생성 → **Firestore Database** 만들기 (Realtime Database 아님), 위치 `asia-northeast3`, 프로덕션 모드
 2. 프로젝트 설정 → 내 앱 → 웹 앱 등록 → 설정값을 `src/data/firebase.js`에 입력
 3. Firestore **규칙** 탭에 `firestore.rules` 내용을 붙여넣고 **게시** (적용까지 몇 분 걸릴 수 있음)
+
+### 무엇을 바꾸려면 어느 파일?
+
+| 바꾸고 싶은 것 | 파일 |
+|---|---|
+| 문구(환영 인사, 버튼 이름 등) | `src/data/wedding.js`의 `onlineHall` |
+| 색 | `src/styles/global.css`의 `--hall-*` |
+| 걷는 속도, 꽃잎 개수, 말풍선 시간 | `src/hall/config.js` |
+| 시점(카메라 위치) | `src/hall/core/camera.js` |
+| 로비 모양, 손님맞이대, 문 | `src/hall/places/lobby.js` |
+| 예식장 모양, 좌석 배치 | `src/hall/places/hall.js` |
+| 캐릭터 모양과 옷 | `src/hall/people/avatars.js` |
+| 앉은 하객 / 내 캐릭터 / 신랑신부의 움직임 | `src/hall/people/`의 `guests.js` / `player.js` / `couple.js` |
+| 이름표, 말풍선, 로비에 떠 있는 버튼 | `src/hall/ui/overlay.js` |
+| 문 열기, 앉기 등 전체 흐름 | `src/hall/index.js` |
+| 입장 카드, 조이스틱, 글쓰기 창, 글 목록 | `src/components/hall/` |
+| 버튼 크기, 휴대폰 크기별 배치 | `src/styles/hall.css` |
+| 글자 수 한도 | `src/utils/guestbook.js`의 `LIMITS`와 `firestore.rules` (둘 다) |

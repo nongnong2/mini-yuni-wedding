@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 // 주소 끝: #hall이면 온라인 하객석, #hall-invitation이면 하객석을 잠시 숨기고 청첩장 보기
 const HALL = '#hall'
@@ -12,11 +12,18 @@ if (window.location.hash === PEEK) clearHash() // 하객석을 거치지 않고 
 // 주소를 바꾸는 방식이라 휴대폰의 뒤로 가기가 자연스럽게 동작함
 export function useHallRoute() {
   const [hash, setHash] = useState(window.location.hash)
+  const live = useRef(hash === HALL) // 하객석이 지금 열려 있는지
 
   useEffect(() => {
     const update = () => {
-      setHash(window.location.hash)
-      if (window.location.hash === PEEK) window.scrollTo(0, 0) // 청첩장 맨 위부터
+      let next = window.location.hash
+      if (next === PEEK && !live.current) { // 하객석을 나간 뒤 뒤로·앞으로 가기로 온 경우: 돌아갈 자리가 없음
+        clearHash()
+        next = ''
+      }
+      live.current = next === HALL || next === PEEK
+      setHash(next)
+      if (next === PEEK) window.scrollTo(0, 0) // 청첩장 맨 위부터
     }
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
@@ -25,6 +32,10 @@ export function useHallRoute() {
   const open = useCallback(() => { window.location.hash = HALL }, [])
   const peek = useCallback(() => { window.location.hash = PEEK }, [])
   const back = useCallback(() => window.history.back(), [])
-  const close = useCallback(() => { clearHash(); setHash('') }, [])
+  const close = useCallback(() => {
+    clearHash()
+    live.current = false
+    setHash('')
+  }, [])
   return { isOpen: hash === HALL || hash === PEEK, isPeeking: hash === PEEK, open, peek, back, close }
 }

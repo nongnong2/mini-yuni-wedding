@@ -198,6 +198,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
   }
   function draw(dt) {
     cameraman.move(state, 1 - Math.exp(-dt * 4))
+    if (state.where === 'hall') hallParts.hideBlockingWalls(stage.camera.position, cameraman.view)
     stage.render()
     const inLobby = state.where === 'lobby'
     overlay.draw({
@@ -249,7 +250,7 @@ export function createHall({ canvas, overlay: overlayRoot, screen, labels, on })
 
     setStick: controls.setStick,
     setKey: controls.setKey,
-    clearInput: controls.clear,
+    clearKeys: controls.clearKeys,
     get yaw() { return state.yaw },
     setYaw(value) {
       const max = MAX_YAW[state.where === 'lobby' ? 'lobby' : state.mode]

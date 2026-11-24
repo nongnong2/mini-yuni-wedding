@@ -24,7 +24,7 @@ export default function Joystick({ onMove }) {
       className="hall-stick"
       onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); move(e) }}
       onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) move(e) }}
-      onPointerUp={() => set(0, 0)} onPointerCancel={() => set(0, 0)}
+      onLostPointerCapture={() => set(0, 0)} // 손가락을 떼거나 놓쳤을 때
     >
       <i ref={knob} />
     </div>

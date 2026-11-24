@@ -8,6 +8,7 @@ export function createControls() {
   return {
     setStick(x, y) { stick.x = x; stick.y = y },
     setKey(code, down) { if (down) keys.add(code); else keys.delete(code) },
+    clearKeys() { keys.clear() },
     clear() { stick.x = stick.y = 0; keys.clear() },
     // 화면 기준 입력을 공간 기준 방향으로 바꿈 (yaw: 카메라의 좌우 각도)
     direction(yaw) {

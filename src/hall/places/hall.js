@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { archHole, makeBuilder, makePicture, makeTree, standard, wall } from '../core/build'
-import { clamp, colors, curtain, makeRandom, merge, place, roundBox, slab } from '../core/shapes'
+import { clamp, colors, curtain, makeRandom, merge, mix, place, roundBox, slab } from '../core/shapes'
 
 // 홀의 크기(미터). x: 왼쪽~오른쪽, z: 앞(스크린)~뒤(입구)
 const BOUNDS = { x0: -8.4, x1: 7.8, z0: -12.4, z1: 9.6 }
@@ -63,9 +63,17 @@ export function buildHall(group, screen) {
 
   const windows = [-7.5, -3.8, 0, 3.8, 7.5]
   const skyMaterial = new THREE.MeshBasicMaterial({ color: colors('sky'), side: THREE.DoubleSide })
+  const sides = [] // 옆벽과 창문 { x, parts }
   for (const s of [-1, 1]) {
     const x = s < 0 ? x0 : x1
-    add(wall(DEPTH, WALL_HEIGHT, windows.map((cx) => archHole(cx, 1.05, 0.9, 2.9))), wallMaterial, x, 0, CENTER.z, false).rotation.y = (-s * Math.PI) / 2
+    const side = { x, parts: [] }
+    sides.push(side)
+    const addSide = (...args) => {
+      const mesh = add(...args)
+      side.parts.push(mesh)
+      return mesh
+    }
+    addSide(wall(DEPTH, WALL_HEIGHT, windows.map((cx) => archHole(cx, 1.05, 0.9, 2.9))), wallMaterial, x, 0, CENTER.z, false).rotation.y = (-s * Math.PI) / 2
     const frame = merge([
       [new THREE.BoxGeometry(0.07, 3.2, 0.07), white, place(0, 2.3, 0)],
       [new THREE.BoxGeometry(0.07, 0.07, 2.1), white, place(0, 1.9, 0)],
@@ -76,8 +84,8 @@ export function buildHall(group, screen) {
       [new THREE.BoxGeometry(0.12, 2.05, 0.12), white, place(-s * 0.06, 1.9, -1.12)],
     ])
     for (const z of windows) {
-      add(new THREE.PlaneGeometry(2.2, 3.4), skyMaterial, x + s * 0.26, 2.3, CENTER.z + z, false).rotation.y = (-s * Math.PI) / 2
-      add(frame, vertexMaterial, x + s * 0.02, 0, CENTER.z + z, false)
+      addSide(new THREE.PlaneGeometry(2.2, 3.4), skyMaterial, x + s * 0.26, 2.3, CENTER.z + z, false).rotation.y = (-s * Math.PI) / 2
+      addSide(frame, vertexMaterial, x + s * 0.02, 0, CENTER.z + z, false)
     }
   }
   add(wall(WIDTH + 0.6, WALL_HEIGHT, []), wallMaterial, CENTER.x, 0, z0 - 0.3, false)
@@ -142,7 +150,18 @@ export function buildHall(group, screen) {
   ])
   addMany(chair, vertexMaterial, SEATS.map((s) => place(s.x, 0, s.z)))
 
-  return { entry } // 안으로 들어가면 시야를 가려서 숨길 것들
+  return {
+    entry, // 안으로 들어가면 시야를 가려서 숨길 것들
+    // 카메라(from)와 바라보는 점(to) 사이를 막는 옆벽을 숨김
+    hideBlockingWalls(from, to) {
+      for (const { x, parts } of sides) {
+        const k = (x - to.x) / (from.x - to.x) // 벽과 만나는 지점의 비율 (0: 바라보는 점, 1: 카메라)
+        const z = mix(to.z, from.z, k)
+        const blocks = k > 0 && k < 1 && z > z0 && z < z1 + 1 && mix(to.y, from.y, k) < WALL_HEIGHT + 4 // 화면 아래쪽만 가려도 숨기게 넉넉히
+        for (const o of parts) o.visible = !blocks
+      }
+    },
+  }
 }
 
 // 스크린 그림: 커버 사진 + 이름 + 날짜

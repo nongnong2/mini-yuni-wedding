@@ -33,7 +33,7 @@ section { padding: 64px 24px; text-align: center; }
   padding: 8px 16px;
   border: 1px solid var(--accent-soft);
   border-radius: 8px;
-  background: #fff;
+  background: var(--white);
   font-size: 13px;
   color: var(--text);
   text-decoration: none;
@@ -54,15 +54,15 @@ section { padding: 64px 24px; text-align: center; }
 .parents strong { font-size: 17px; }
 
 /* ---------- Calendar ---------- */
-.calendar { background: #fff; border-radius: 12px; padding: 24px 16px; }
+.calendar { background: var(--white); border-radius: 12px; padding: 24px 16px; }
 .calendar-month { font-family: var(--serif); font-size: 18px; margin-bottom: 16px; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 8px; font-size: 14px; }
 .calendar-grid .weekday { color: var(--text-soft); font-size: 12px; }
-.calendar-grid .sun { color: #d3786e; }
+.calendar-grid .sun { color: var(--sunday); }
 .calendar-grid .day { height: 36px; line-height: 36px; }
 .calendar-grid .wedding-day {
   background: var(--accent);
-  color: #fff;
+  color: var(--white);
   border-radius: 50%;
   width: 36px;
   margin: 0 auto;
@@ -77,18 +77,19 @@ section { padding: 64px 24px; text-align: center; }
 .lightbox {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.92);
+  background: var(--photo-back);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
 }
 .lightbox img { max-width: 100%; max-height: 80vh; }
-.lightbox button { position: absolute; color: #fff; font-size: 32px; padding: 16px; }
-.lightbox .close { top: 8px; right: 8px; }
-.lightbox .prev { left: 0; }
-.lightbox .next { right: 0; }
-.lightbox .counter { position: absolute; bottom: 24px; color: #ccc; font-size: 14px; }
+.lightbox button { position: absolute; color: var(--white); font-size: 32px; padding: 16px; }
+/* env: 노치·홈 막대가 있으면 그만큼 안쪽으로 */
+.lightbox .close { top: calc(8px + env(safe-area-inset-top)); right: calc(8px + env(safe-area-inset-right)); }
+.lightbox .prev { left: env(safe-area-inset-left); }
+.lightbox .next { right: env(safe-area-inset-right); }
+.lightbox .counter { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); color: var(--photo-text); font-size: 14px; }
 
 /* ---------- Location ---------- */
 .venue-name { font-family: var(--serif); font-size: 18px; }
@@ -100,7 +101,7 @@ section { padding: 64px 24px; text-align: center; }
 .transport p { font-size: 14px; }
 
 /* ---------- Account ---------- */
-.account-group { margin-bottom: 12px; border-radius: 8px; overflow: hidden; background: #fff; text-align: left; }
+.account-group { margin-bottom: 12px; border-radius: 8px; overflow: hidden; background: var(--white); text-align: left; }
 .account-toggle { width: 100%; padding: 16px; display: flex; justify-content: space-between; font-size: 15px; }
 .account-item {
   display: flex;
@@ -117,5 +118,6 @@ footer { padding: 40px 0; text-align: center; color: var(--text-soft); font-size
 /* ---------- 온라인 하객석으로 가는 버튼 (하객석 안의 모양은 hall.css) ---------- */
 .hall-enter { margin-top: 28px; padding: 10px 28px; font-size: 15px; }
 /* 하객석에서 청첩장을 보러 왔을 때 돌아가는 버튼 */
-.hall-back { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); min-height: 44px; transform: translateX(-50%); z-index: 55; padding: 12px 22px; border: 0; border-radius: 99px; background: var(--hall-text-accent); color: var(--hall-white); font-size: 15px; white-space: nowrap; box-shadow: 0 6px 18px var(--hall-dim); }
+.hall-back { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); min-height: 44px; transform: translateX(-50%); z-index: 45; padding: 12px 22px; border: 0; border-radius: 99px; background: var(--hall-text-accent); color: var(--hall-white); font-size: 15px; white-space: nowrap; box-shadow: 0 6px 18px var(--hall-dim); }
+.hall-back ~ .toast { bottom: calc(88px + env(safe-area-inset-bottom)); } /* 돌아가기 버튼을 가리지 않게 */
 .hall-loading { position: fixed; inset: 0; z-index: 60; background: var(--hall-background); display: grid; place-items: center; }

@@ -12,7 +12,7 @@ export function useArrowKeys(hall, active) {
       hall.current?.setKey(e.code, true)
     }
     const up = (e) => hall.current?.setKey(e.code, false)
-    const clear = () => hall.current?.clearInput() // 다른 창으로 가면 누르던 키를 뗀 것으로
+    const clear = () => hall.current?.clearKeys() // 다른 창으로 가면 누르던 키를 뗀 것으로
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
     window.addEventListener('blur', clear)

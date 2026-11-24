@@ -10,7 +10,6 @@ export default function WriteForm({ defaultName, onPost, onClose, avatar, onAvat
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false) // 저장 중 (두 번 눌러도 한 번만 저장)
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value })
-  const close = () => { if (!busy) onClose() } // 저장 중에는 닫지 않음
 
   async function submit(e) {
     e.preventDefault()
@@ -29,7 +28,7 @@ export default function WriteForm({ defaultName, onPost, onClose, avatar, onAvat
   }
 
   return (
-    <Sheet onClose={close}>
+    <Sheet onClose={() => { if (!busy) onClose() }}> {/* 저장 중에 바깥을 잘못 눌러 닫히지 않게. 취소는 언제나 가능 */}
       <form className="hall-form" onSubmit={submit}>
         <h2>방명록 쓰기</h2>
         {onAvatar && (
@@ -45,7 +44,7 @@ export default function WriteForm({ defaultName, onPost, onClose, avatar, onAvat
         <small>{wedding.onlineHall.notice}</small>
         {error && <p className="hall-error" role="alert">{error}</p>}
         <div className="hall-row">
-          <button type="button" className="hall-btn" disabled={busy} onClick={close}>취소</button>
+          <button type="button" className="hall-btn" onClick={onClose}>취소</button>
           <button className="hall-btn main" disabled={busy}>{busy ? '저장 중' : '남기기'}</button>
         </div>
       </form>

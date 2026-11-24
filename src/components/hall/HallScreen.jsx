@@ -50,7 +50,7 @@ export default function HallScreen({ hidden, onClose, onInvite, onToast }) {
     const message = await guestbook.add({ ...form, avatar })
     setName(form.name)
     setMineId(message.id)
-    closeSheet()
+    setSheet((open) => (open === 'write' ? '' : open)) // 저장 중에 다른 창을 열었으면 그대로 둠
     onToast('방명록을 남겼습니다')
     hall.current?.wrote(message.id)
   }

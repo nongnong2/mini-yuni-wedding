@@ -9,6 +9,7 @@ import Account from './components/Account'
 import { wedding } from './data/wedding'
 import { useHallRoute } from './hooks/useHallRoute'
 import { useToast } from './hooks/useToast'
+import { copyText } from './utils/clipboard'
 
 // lazy: 입장할 때만 3D 홀 코드를 내려받음 → 청첩장 첫 화면은 그대로 가볍게
 const HallScreen = lazy(() => import('./components/hall/HallScreen'))
@@ -19,8 +20,7 @@ export default function App() {
 
   // 텍스트를 클립보드에 복사
   const copy = async (text) => {
-    await navigator.clipboard.writeText(text)
-    showToast('복사되었습니다')
+    showToast(await copyText(text) ? '복사되었습니다' : '복사하지 못했습니다. 길게 눌러 복사해 주세요')
   }
 
   return (
